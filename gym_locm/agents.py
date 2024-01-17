@@ -294,11 +294,11 @@ class NativeAgent(Agent):
                 continue
 
             if tokens[0] == "PASS":
-                decoded_actions.append(Action(ActionType.PASS))
+                decoded_actions.append(Action(ActionType.PASS, action_num=int(tokens[-1])))
             elif tokens[0] == "PICK":
-                decoded_actions.append(Action(ActionType.PICK, int(tokens[1])))
+                decoded_actions.append(Action(ActionType.PICK, int(tokens[1]), action_num=int(tokens[-1])))
             elif tokens[0] == "CHOOSE":
-                decoded_actions.append(Action(ActionType.CHOOSE, int(tokens[1])))
+                decoded_actions.append(Action(ActionType.CHOOSE, int(tokens[1]), action_num=int(tokens[-1])))
             elif tokens[0] == "USE":
                 origin = int(tokens[1])
                 target = int(tokens[2])
@@ -306,12 +306,12 @@ class NativeAgent(Agent):
                 if target == -1:
                     target = None
 
-                decoded_actions.append(Action(ActionType.USE, origin, target))
+                decoded_actions.append(Action(ActionType.USE, origin, target, action_num=int(tokens[-1])))
             elif tokens[0] == "SUMMON":
                 origin = int(tokens[1])
                 target = Lane(int(tokens[2]))
 
-                decoded_actions.append(Action(ActionType.SUMMON, origin, target))
+                decoded_actions.append(Action(ActionType.SUMMON, origin, target, action_num=int(tokens[-1])))
             elif tokens[0] == "ATTACK":
                 origin = int(tokens[1])
                 target = int(tokens[2])
@@ -319,7 +319,7 @@ class NativeAgent(Agent):
                 if target == -1:
                     target = None
 
-                decoded_actions.append(Action(ActionType.ATTACK, origin, target))
+                decoded_actions.append(Action(ActionType.ATTACK, origin, target, action_num=int(tokens[-1])))
 
         return decoded_actions
 
@@ -395,10 +395,10 @@ class NativeAgent(Agent):
             print("WARNING: eof")
 
         if not actions:
-            actions = [Action(ActionType.PASS)]
+            actions = [Action(ActionType.PASS, action_num=0)]
 
         if actions[-1].type != ActionType.PASS and state.is_battle():
-            actions += [Action(ActionType.PASS)]
+            actions += [Action(ActionType.PASS, action_num=0)]
 
         if multiple:
             return actions
