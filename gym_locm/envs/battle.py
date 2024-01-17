@@ -22,6 +22,8 @@ class LOCMBattleEnv(LOCMEnv):
         reward_weights=(1.0,),
         version="1.5",
         use_average_deck=False,
+        deck_pool_size=None,
+        same_shuffle=True
     ):
         super().__init__(
             seed=seed,
@@ -31,6 +33,8 @@ class LOCMBattleEnv(LOCMEnv):
             n=n,
             reward_functions=reward_functions,
             reward_weights=reward_weights,
+            deck_pool_size=deck_pool_size,
+            same_shuffle=same_shuffle
         )
 
         self.rewards = [0.0]

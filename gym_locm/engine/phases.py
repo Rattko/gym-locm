@@ -205,7 +205,7 @@ class DraftPhase(DeckBuildingPhase):
 
 
 class ConstructedPhase(DeckBuildingPhase):
-    def __init__(self, state, rng, *, items=True, k=120, n=30, max_copies=2):
+    def __init__(self, state, rng, *, items=True, k=120, n=30, max_copies=2, deck_pool_size=None):
         super().__init__(state, rng, items=items)
 
         self.k, self.n = k, n
@@ -214,6 +214,12 @@ class ConstructedPhase(DeckBuildingPhase):
         self._constructed_cards = None
         self._action_mask = [True] * self.k, [True] * self.k
         self._choices = [0] * self.k, [0] * self.k
+
+        self._deck_pool = None
+        self._deck_pool_size = deck_pool_size
+
+        if deck_pool_size is not None:
+            self._deck_pool = [self._new_constructed() for _ in range(deck_pool_size)]
 
     def available_actions(self) -> Tuple[Action]:
         return tuple(
@@ -232,7 +238,11 @@ class ConstructedPhase(DeckBuildingPhase):
         self._current_player = PlayerOrder.FIRST
 
         # initialize random constructed cards
-        self._constructed_cards = self._new_constructed()
+        if self._deck_pool is None:
+            self._constructed_cards = self._new_constructed()
+        else:
+            deck = np.random.randint(0, self._deck_pool_size)
+            self._constructed_cards = self._deck_pool[deck]
 
         # initialize the players' hands
         for player in self.state.players:
@@ -323,7 +333,7 @@ class ConstructedPhase(DeckBuildingPhase):
 
 
 class BattlePhase(Phase):
-    def __init__(self, state, rng, *, items=True):
+    def __init__(self, state, rng, *, items=True, same_shuffle=True):
         super().__init__(state, rng, items=items)
 
         self.winner = None
@@ -331,6 +341,8 @@ class BattlePhase(Phase):
         self.instance_counter = 0
         self.summon_counter = 0
         self.damage_counter = [0, 0]
+
+        self._same_shuffle = same_shuffle
 
     def _next_instance_id(self):
         self.instance_counter += 1
@@ -498,7 +510,7 @@ class BattlePhase(Phase):
             player.hand = []
             player.lanes = ([], [])
 
-            self.rng.shuffle(player.deck)
+            self.rng.shuffle(player.deck) if self._same_shuffle else np.random.shuffle(player.deck)
 
         d1, d2 = [], []
 

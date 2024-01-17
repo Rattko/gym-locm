@@ -48,7 +48,7 @@ class State:
             self.deck_building_phase = ConstructedPhase(
                 self, self.rng, items=items, **deck_building_kwargs
             )
-            self.battle_phase = Version15BattlePhase(self, self.rng, items=items)
+            self.battle_phase = Version15BattlePhase(self, self.rng, items=items, **battle_kwargs)
 
             self.phase = Phase.CONSTRUCTED
 

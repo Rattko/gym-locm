@@ -33,6 +33,8 @@ class LOCMEnv(gym.Env, ABC):
         n=30,
         reward_functions=("win-loss",),
         reward_weights=(1.0,),
+        deck_pool_size=None,
+        same_shuffle=True
     ):
         self._seed = seed
         self.version = version
@@ -60,8 +62,13 @@ class LOCMEnv(gym.Env, ABC):
         self.reward_range = (-sum(reward_weights), sum(reward_weights))
 
         self.state = State(
-            seed=seed, items=items, version=version, deck_building_kwargs=dict(k=k, n=n)
+            seed=seed, items=items, version=version,
+            deck_building_kwargs=dict(k=k, n=n, deck_pool_size=deck_pool_size),
+            battle_kwargs=dict(same_shuffle=same_shuffle)
         )
+
+        self._deck_pool_size = deck_pool_size
+        self._same_shuffle = same_shuffle
 
     def seed(self, seed=None):
         """Sets a seed for random choices in the game."""
@@ -88,13 +95,14 @@ class LOCMEnv(gym.Env, ABC):
             self.state.rng = rng
         else:
             # start a brand new game with next seed
-            self._seed += 1
+            self._seed += 0 if self._deck_pool_size is not None else 1
 
             self.state = State(
                 seed=self._seed,
                 items=self.items,
                 version=self.version,
-                deck_building_kwargs=dict(k=self.k, n=self.n),
+                deck_building_kwargs=dict(k=self.k, n=self.n, deck_pool_size=self._deck_pool_size),
+                battle_kwargs=dict(same_shuffle=self._same_shuffle)
             )
 
         self.episodes += 1
