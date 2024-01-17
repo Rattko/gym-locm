@@ -177,8 +177,8 @@ class LOCMConstructedEnv(LOCMEnv):
 
     def do_match(self, state):
         # reset the agents
-        for agent in self.battle_agents:
-            agent.reset()
+        # for agent in self.battle_agents:
+        #     agent.reset()
 
         # while the game doesn't end, get agents acting alternatively
         while state.winner is None:

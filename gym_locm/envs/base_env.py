@@ -331,7 +331,7 @@ class LOCMEnv(gym.Env, ABC):
             else:
                 return None
         except MalformedActionError:
-            return None
+            raise
 
     def decode_deck_building_action(self, action_number):
         """
@@ -487,7 +487,7 @@ class LOCMEnv(gym.Env, ABC):
         """Encodes a state object into a numerical matrix."""
         if self.state.phase == Phase.DECK_BUILDING:
             return self._encode_state_deck_building()
-        elif self.state.phase == Phase.BATTLE:
+        else:
             return self._encode_state_battle()
 
     @abstractmethod

@@ -64,7 +64,7 @@ class LOCMBattleEnv(LOCMEnv):
             + card_features * int(self.use_average_deck)
         )
         self.observation_space = gym.spaces.Box(
-            low=-1.0, high=1.0, shape=(self.state_shape,), dtype=np.float32
+            low=-np.inf, high=np.inf, shape=(self.state_shape,), dtype=np.float32
         )
 
         if self.items:
