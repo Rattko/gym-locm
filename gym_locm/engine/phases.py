@@ -104,7 +104,7 @@ class DeckBuildingPhase(Phase, ABC):
 
 
 class DraftPhase(DeckBuildingPhase):
-    def __init__(self, state, rng, *, items=True, k=3, n=30):
+    def __init__(self, state, rng, *, items=True, k=3, n=30, **kwargs):
         super().__init__(state, rng, items=items)
 
         self.k, self.n = k, n
@@ -967,8 +967,8 @@ Version15BattlePhase = BattlePhase
 
 
 class Version12BattlePhase(BattlePhase):
-    def __init__(self, state, rng, *, items=True):
-        super().__init__(state, rng, items=items)
+    def __init__(self, state, rng, *, items=True, same_shuffle=True):
+        super().__init__(state, rng, items=items, same_shuffle=same_shuffle)
 
     def _damage_player(self, player: Player, amount: int, source: DamageSource) -> int:
         player.health -= amount

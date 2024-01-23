@@ -56,7 +56,7 @@ class State:
             self.deck_building_phase = DraftPhase(
                 self, self.rng, items=items, **deck_building_kwargs
             )
-            self.battle_phase = Version12BattlePhase(self, self.rng, items=items)
+            self.battle_phase = Version12BattlePhase(self, self.rng, items=items, **battle_kwargs)
 
             self.phase = Phase.DRAFT
 
