@@ -215,11 +215,8 @@ class ConstructedPhase(DeckBuildingPhase):
         self._action_mask = [True] * self.k, [True] * self.k
         self._choices = [0] * self.k, [0] * self.k
 
-        self._deck_pool = None
+        self._deck_pool_seeds = self.rng.integers(0, 2 ** 32, size=deck_pool_size)
         self._deck_pool_size = deck_pool_size
-
-        if deck_pool_size is not None:
-            self._deck_pool = [self._new_constructed() for _ in range(deck_pool_size)]
 
     def available_actions(self) -> Tuple[Action]:
         return tuple(
@@ -238,18 +235,16 @@ class ConstructedPhase(DeckBuildingPhase):
         self._current_player = PlayerOrder.FIRST
 
         # initialize random constructed cards
-        if self._deck_pool is None:
-            self._constructed_cards = self._new_constructed()
-        else:
-            deck = np.random.randint(0, self._deck_pool_size)
-            self._constructed_cards = self._deck_pool[deck]
+        seed = np.random.choice(self._deck_pool_seeds) if len(self._deck_pool_seeds) else None
+        self._constructed_cards = self._new_constructed(seed)
 
         # initialize the players' hands
         for player in self.state.players:
             player.hand = list(self._constructed_cards)
 
-    def _new_constructed(self):
-        card_pool = [generate_card(i, self.rng, self.items) for i in range(self.k)]
+    def _new_constructed(self, seed=None):
+        rng = self.rng if seed is None else np.random.default_rng(seed)
+        card_pool = [generate_card(i, rng, self.items) for i in range(self.k)]
 
         return card_pool
 
