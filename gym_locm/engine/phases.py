@@ -215,7 +215,7 @@ class ConstructedPhase(DeckBuildingPhase):
         self._action_mask = [True] * self.k, [True] * self.k
         self._choices = [0] * self.k, [0] * self.k
 
-        self._deck_pool_seeds = self.rng.integers(0, 2 ** 32, size=deck_pool_size)
+        self._deck_pool_seeds = self.rng.integers(0, 2 ** 32, size=deck_pool_size or 0)
         self._deck_pool_size = deck_pool_size
 
     def available_actions(self) -> Tuple[Action]:
