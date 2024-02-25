@@ -4,7 +4,8 @@ import io
 import sys
 from datetime import datetime
 from pstats import Stats
-from multiprocessing import Pool, Manager, Lock
+from multiprocessing import Manager, Lock
+from pathos.pools import ProcessPool
 
 from gym_locm import agents, engine
 from gym_locm.agents import (
@@ -43,6 +44,13 @@ def get_arg_parser():
     )
 
     p.add_argument(
+        "--p1-python",
+        help="python agent to be used by player 1 - "
+        "mutually exclusive with deck-building, battle and time args",
+    )
+
+
+    p.add_argument(
         "--p2-deck-building",
         "-db2",
         help="deck-building agent used by player 2",
@@ -58,6 +66,12 @@ def get_arg_parser():
     p.add_argument(
         "--p2-path",
         help="native agent to be used by player 2 - "
+        "mutually exclusive with deck-building, battle and time args",
+    )
+
+    p.add_argument(
+        "--p2-python",
+        help="python agent to be used by player 2 - "
         "mutually exclusive with deck-building, battle and time args",
     )
 
@@ -103,7 +117,6 @@ def evaluate(params):
         bot.reset()
 
     battle_states = [], []
-
     while game.winner is None:
         if game.phase == engine.Phase.DECK_BUILDING:
             bot = deck_building_bots[game.current_player.id]
@@ -148,13 +161,13 @@ def run():
     arg_parser = get_arg_parser()
     args = arg_parser.parse_args()
 
-    if not args.p1_path and (not args.p1_deck_building or not args.p1_battle):
+    if not (args.p1_path or args.p1_python) and (not args.p1_deck_building or not args.p1_battle):
         arg_parser.error(
-            "You should use either p1-path or both p1-deck-building and p1-battle.\n"
+            "You should use either p1-path or p1-python or both p1-deck-building and p1-battle.\n"
         )
-    elif not args.p2_path and (not args.p2_deck_building or not args.p2_battle):
+    elif  not (args.p2_path or args.p2_python) and (not args.p2_deck_building or not args.p2_battle):
         arg_parser.error(
-            "You should use either p2-path or both p2-deck-building and p2-battle.\n"
+            "You should use either p2-path or p2-python or both p2-deck-building and p2-battle.\n"
         )
 
     if args.version == "1.5":
@@ -164,6 +177,9 @@ def run():
 
     if args.p1_path is not None:
         player_1 = agents.NativeAgent(args.p1_path)
+        player_1 = (player_1, player_1)
+    elif args.p1_python is not None:
+        player_1 = agents.PythonAgent(args.p1_python)
         player_1 = (player_1, player_1)
     else:
         player_1 = (
@@ -176,6 +192,9 @@ def run():
 
     if args.p2_path is not None:
         player_2 = agents.NativeAgent(args.p2_path)
+        player_2 = (player_2, player_2)
+    elif args.p2_python is not None:
+        player_2 = agents.PythonAgent(args.p2_python)
         player_2 = (player_2, player_2)
     else:
         player_2 = (
@@ -227,7 +246,7 @@ def run():
             for j in range(args.games)
         )
 
-        with Pool(args.processes) as pool:
+        with ProcessPool(processes=args.processes) as pool:
             pool.map(evaluate, params)
 
     wins, games = wins_by_p0
