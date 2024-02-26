@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 experiments = [
     "numpy",
-    "scipy",.
+    "scipy",
     "hyperopt",
     "pandas",
     "matplotlib",
