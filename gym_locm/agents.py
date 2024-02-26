@@ -1,8 +1,10 @@
+import importlib.util
 import sys
 from abc import ABC, abstractmethod
 from operator import attrgetter
 from typing import Type
 from os import fpathconf
+import os
 
 import numpy as np
 from pexpect import TIMEOUT, EOF
@@ -237,51 +239,34 @@ class MaxAttackBattleAgent(Agent):
         return Action(ActionType.PASS)
 
 
-class NativeAgent(Agent):
+class ExternalAgent(Agent):
     action_buffer = []
-
-    def __init__(self, cmd, stateful=True, verbose=False):
-        self.cmd = cmd
+    def __init__(self, stateful=True, verbose=False) -> None:
+        super().__init__()
         self.stateful = stateful
         self.verbose = verbose
         self.initialized = False
-        self.action_buffer = []
-
         self.raw_actions = ""
 
-        self._process = None
-
-    def initialize(self):
-        self._process: pexpect.pty_spawn.spawn = pexpect.spawn(
-            self.cmd, echo=False, encoding="utf-8"
-        )
-        self.initialized = True
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    def close(self):
-        if self.initialized:
-            self._process.terminate()
-
-            self._process = None
-            self.initialized = False
-
-    def seed(self, seed):
-        pass
-
+    @abstractmethod
     def reset(self):
-        self.action_buffer = []
+        pass
 
-        if self.initialized and self.stateful:
-            self._process.terminate()
+    @abstractmethod
+    def initialize(self):
+        pass
 
-            self._process = None
-            self.initialized = False
+    def act(self, state, multiple=False):
+        if not self.initialized:
+            self.initialize()
+            self.initialized = True
 
+        return self._act(state, multiple)
+    
+    @abstractmethod
+    def _act(self, state, multiple=False):
+        pass
+    
     @staticmethod
     def decode_actions(actions):
         actions = actions.split(";")
@@ -322,6 +307,100 @@ class NativeAgent(Agent):
                 decoded_actions.append(Action(ActionType.ATTACK, origin, target, action_num=int(tokens[-1])))
 
         return decoded_actions
+
+class PythonAgent(ExternalAgent):
+    def __init__(self, path: str, stateful=True, verbose=False) -> None:
+        self.path = path
+        self.agent = None
+
+        spec = importlib.util.spec_from_file_location("agent", self.path)
+        module = importlib.util.module_from_spec(spec)
+        sys.path.append(os.path.dirname(self.path))
+        spec.loader.exec_module(module)
+        self.cls = getattr(module, "AgentIface")
+        super().__init__(stateful, verbose)
+    
+    def initialize(self):
+            
+        if not self.agent:
+            self.agent = self.cls()
+            self.initialized = True
+
+    def _act(self, state, multiple=False):
+        if self.action_buffer:
+            if multiple:
+                return list(reversed(self.action_buffer))
+            else:
+                return self.action_buffer.pop()
+        
+
+        str_state = str(state).splitlines()
+        actions_str = self.agent.act(str_state)
+        actions = self.decode_actions(actions_str)
+
+
+        if not actions:
+            actions = [Action(ActionType.PASS)]
+
+        if actions[-1].type != ActionType.PASS and state.is_battle():
+            actions += [Action(ActionType.PASS)]
+
+        if multiple:
+            return actions
+        else:
+            self.action_buffer = list(reversed(actions))
+
+            return self.action_buffer.pop()
+        
+
+    def reset(self):
+        self.agent = None
+        self.action_buffer = []
+        self.initialized = False
+
+    def seed(self, seed):
+        return super().seed(seed)
+
+class NativeAgent(ExternalAgent):
+
+    def __init__(self, cmd, stateful=True, verbose=False):
+        super().__init__(stateful, verbose)
+
+        self.cmd = cmd
+
+
+        self._process = None
+
+    def initialize(self):
+        self._process: pexpect.pty_spawn.spawn = pexpect.spawn(
+            self.cmd, echo=False, encoding="utf-8"
+        )
+        self.initialized = True
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        if self.initialized:
+            self._process.terminate()
+
+            self._process = None
+            self.initialized = False
+
+    def seed(self, seed):
+        pass
+
+    def reset(self):
+        self.action_buffer = []
+
+        if self.initialized and self.stateful:
+            self._process.terminate()
+
+            self._process = None
+            self.initialized = False
 
     def act(self, state, multiple=False):
         if not self.initialized:

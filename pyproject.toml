@@ -17,6 +17,7 @@ dependencies = [
     "prettytable",
     "pexpect",
     "sty",
+    "pathos"
 ]
 
 [project.optional-dependencies]
